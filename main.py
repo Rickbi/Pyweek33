@@ -1,6 +1,7 @@
 import pygame
 from pygame.locals import *
 
+from map import Map
 
 def main():
     pygame.init()
@@ -16,4 +17,6 @@ def main():
     pygame.quit()
 
 if __name__ == '__main__':
-    main()
+    #main()
+    map = Map(500,500, 50, 50)
+    map.main()
