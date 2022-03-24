@@ -18,5 +18,5 @@ def main():
 
 if __name__ == '__main__':
     #main()
-    map = Map(500,500, 50, 50)
-    map.main()
+    map = Map(1440,810, 45, 45)
+    map.main_menu()
