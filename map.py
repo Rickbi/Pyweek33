@@ -16,18 +16,45 @@ class Map:
         self.clock = pygame.time.Clock()
         self.fps = 60
         font = pygame.font.match_font('consolas')
-        self.font = pygame.font.Font(font, 50)
+        self.font_size = min(width*50//1440, height*50//810)
+        #print(font_size)
+        self.font = pygame.font.Font(font, self.font_size)
+        self.load_assets()
+        self.load_story()
 
         self.t1 = time.time()
         self.block_select = 0
         self.block_type = [(0,0,0), (255,0,0), (0,255,0), (0,0,255), (255,255,255), (255,0,255), (255,255,0)]
 
         self.level = 1
-        self.last_level = 1
+        self.last_level = len(self.story) + 1
+        self.save_map_slot = self.last_level + 1
         self.reset()
 
-        self.save_map_slot = 0
-              
+    def load_last_level_played(self):
+        path = os.path.join('levels', 'save.txt')
+        with open(path, 'r') as f:
+            lvl = int(f.read())
+        return lvl
+    
+    def save_last_level_played(self):
+        path = os.path.join('levels', 'save.txt')
+        with open(path, 'w') as f:
+            f.write(f'{self.level}')
+
+    def load_assets(self):
+        self.images = {'floor' : None,
+                       'wall'  : None,
+                       'rock'  : None,
+                       'player'  : None,
+                       'twin'  : None,
+                       'player_door'  : None,
+                       'twin_door'  : None}
+        for name in self.images:
+            path = os.path.join('assets', f'{name}.png')
+            img = pygame.image.load(path).convert_alpha()
+            self.images[name] = pygame.transform.scale(img, (self.nx, self.ny))
+
     def load_level(self, name):
         path = os.path.join('levels', f'{name}.csv')
         with open(path, 'r') as f:
@@ -39,23 +66,25 @@ class Map:
             lvl.remove([])
         return lvl
 
+    def load_story(self):
+        path = os.path.join('levels', 'story.txt')
+        self.story = []
+        with open(path, 'r') as f:
+            text = f.read()
+            for line in text.split('\n'):
+                self.story.append(line.split('-'))
+
     def add_sprite(self, value, x, y):
         if value == 2:
-            self.player.add(Sprite(self.nx, self.ny, x, y, 2, 0, movable = [0,4,5], color = (255,0,0)))
+            self.player.add(Sprite(self.nx, self.ny, x, y, 2, 0, [0,4,5], self.images['player']))
         elif value == 3:
-            self.twin.add(Sprite(self.nx, self.ny, x, y, 3, 0, movable = [0,4,5], color = (100,255,100)))
-        elif value == 4:
-            self.player_door.add(Sprite(self.nx, self.ny, x, y, 4, 0, color = (255,255,255)))
-        elif value == 5:
-            self.twin_door.add(Sprite(self.nx, self.ny, x, y, 5, 0, color = (255,0,255)))
+            self.twin.add(Sprite(self.nx, self.ny, x, y, 3, 0, [0,4,5], self.images['twin']))
         elif value == 6:
-            self.rocks.add(Sprite(self.nx, self.ny, x, y, 6, 0, movable = [0,4,5], color = (255,255,0)))
+            self.rocks.add(Sprite(self.nx, self.ny, x, y, 6, 0, [0,4,5], self.images['rock']))
 
     def make_level(self):
         self.player = pygame.sprite.GroupSingle()
         self.twin = pygame.sprite.GroupSingle()
-        self.player_door = pygame.sprite.GroupSingle()
-        self.twin_door = pygame.sprite.GroupSingle()
         self.rocks = pygame.sprite.Group()
         for y, line in enumerate(self.lvl):
             for x, value in enumerate(line):
@@ -73,23 +102,46 @@ class Map:
         text_surf = self.font.render(text, True, (255,255,255))
         self.screen.blit(text_surf, pos)
 
+    def get_image(self, value):
+        if value == 0:
+            return self.images['floor']
+        elif value == 1:
+            return self.images['wall']
+        elif value == 2:
+            return self.images['player']
+        elif value == 3:
+            return self.images['twin']
+        elif value == 4:
+            return self.images['player_door']
+        elif value == 5:
+            return self.images['twin_door']
+        else:
+            return self.images['rock']
+
     def draw(self):
-        self.scene.fill((100,100,100))
+        self.scene.fill((0,0,0))
         for y, col in enumerate(self.lvl):
             for x, row in enumerate(col):
-                color = self.block_type[self.lvl[y][x]]
-                rect = ((x*self.nx, y*self.ny),(self.nx, self.ny))
-                pygame.draw.rect(self.scene, color, rect, 5)
+                color = (0,0,0)
+                img = self.get_image(row)
+                rect = img.get_rect(topleft = (x*self.nx, y*self.ny) )
+                self.scene.blit(img, rect)
+                pygame.draw.rect(self.scene, color, rect, 1)
     
     def draw_level(self):
         for y, col in enumerate(self.lvl):
             for x, row in enumerate(col):
                 if row == 1:
-                    color = (255,0,0)
+                    img = self.images['wall']
+                elif row == 4:
+                    img = self.images['player_door']
+                elif row == 5:
+                    img = self.images['twin_door']
                 else:
-                    color = (0,0,0)
-                rect = ((x*self.nx, y*self.ny),(self.nx, self.ny))
-                pygame.draw.rect(self.scene, color, rect, 0)
+                    img = self.images['floor']
+                
+                pos = (x*self.nx, y*self.ny)
+                self.scene.blit(img, pos)
     
     def get_pos_grid(self, pos):
         ix = pos[0]//self.nx
@@ -99,8 +151,12 @@ class Map:
     def draw_square(self):
         m_pos = pygame.mouse.get_pos()
         i_pos = self.get_pos_grid(m_pos)
-        rect = ((self.nx*i_pos[0], self.ny*i_pos[1]),(self.nx,self.ny))
-        pygame.draw.rect(self.screen, self.block_type[self.block_select], rect, 5)
+
+        color = (0,0,0)
+        img = self.get_image(self.block_select)
+        rect = img.get_rect(topleft = (self.nx*i_pos[0], self.ny*i_pos[1]) )
+        self.scene.blit(img, rect)
+        pygame.draw.rect(self.scene, color, rect, 1)
 
     def show_fps(self):
         dt = time.time() - self.t1
@@ -145,12 +201,47 @@ class Map:
         self.make_level()
         self.draw_level()
 
+    def select_menu(self):
+        run = True
+        buttons = [Button('Back', self.width*200//1440, self.height*100//810, self.font_size)]
+        level = self.load_last_level_played()
+
+        for i in range(level):
+            x = 200 + 250*(i//4)
+            y = 250 + 100*(i%4)
+            buttons.append(Button(f'lvl {1+i}', self.width*x//1440, self.height*y//810, self.font_size))
+
+        while run:
+            if pygame.event.get(QUIT):
+                run = False
+            for event in pygame.event.get(MOUSEBUTTONUP):
+                if event.button == 1:
+                    for button in buttons:
+                        if pygame.Rect.collidepoint(button.rect, event.pos[0], event.pos[1]):
+                            if button.text == 'Back':
+                                run = False
+                            else:
+                                return int(button.text.replace('lvl ', ''))
+
+            self.screen.fill((0,0,10))
+            pos_m = pygame.mouse.get_pos()
+            for button in buttons:
+                if pygame.Rect.collidepoint(button.rect, pos_m[0], pos_m[1]):
+                    button.draw(self.screen, (255,0,0))
+                else:
+                    button.draw(self.screen, (0,0,255))
+
+            self.show_fps()
+            pygame.display.flip()
+            self.clock.tick(self.fps)
+
     def main_menu(self):
         run = True
-        buttons = [Button('Play', self.width//2, 100),
-                   Button('Reset Level', self.width//2, 250),
-                   Button('Make Level', self.width//2, 400),
-                   Button('Quit Game', self.width//2, 550)]
+        buttons = [Button('Play', self.width//2, self.height*100//810, self.font_size),
+                   Button('Reset Level', self.width//2, self.height*250//810, self.font_size),
+                   Button('Level Select', self.width//2, self.height*400//810, self.font_size),
+                   Button('Make Level', self.width//2, self.height*550//810, self.font_size),
+                   Button('Quit Game', self.width//2, self.height*700//810, self.font_size)]
 
         while run:
             if pygame.event.get(QUIT):
@@ -165,13 +256,19 @@ class Map:
                                 self.level = 0
                                 self.reset()
                                 self.map_maker()
-                                #self.save_level('lvl_10')
-                                self.level = 10
+                                self.level = 1
+                                self.reset()
                             elif button.text == 'Reset Level':
                                 self.reset()
                                 self.game()
                             elif button.text == 'Quit Game':
                                 run = False
+                            elif button.text == 'Level Select':
+                                select = self.select_menu()
+                                if select:
+                                    self.level = select
+                                    self.reset()
+                                    self.game()
 
             self.screen.fill((0,0,10))
             pos_m = pygame.mouse.get_pos()
@@ -206,6 +303,27 @@ class Map:
 
             pygame.display.flip()
             self.clock.tick(self.fps)
+    
+    def end_level_scene(self):
+        run = True
+        while run:
+            if pygame.event.get(QUIT):
+                run = False
+            for event in pygame.event.get(KEYUP):
+                run = False
+            for event in pygame.event.get(MOUSEBUTTONUP):
+                if event.button == 1 or event.button == 3:
+                    run = False
+
+            self.screen.fill((0,0,50))
+
+            for i, line in enumerate(self.story[self.level - 1]):
+                self.write(line, (self.width*100//1440, self.height*(100 + i*200)//810 ))
+            
+            self.show_fps()
+
+            pygame.display.flip()
+            self.clock.tick(self.fps)
 
     def game(self):
         run = True
@@ -221,7 +339,10 @@ class Map:
                             run = False
                             won = True
                         else:
+                            self.end_level_scene()
                             self.level += 1
+                            if self.load_last_level_played() < self.level:
+                                self.save_last_level_played()
                             self.reset()
                 elif event.key == K_ESCAPE:
                     run = False
@@ -242,8 +363,8 @@ class Map:
             self.screen.fill((100,100,100))
             self.screen.blit(self.scene, (0,0))
             
-            self.player_door.draw(self.screen)
-            self.twin_door.draw(self.screen)
+            #self.player_door.draw(self.screen)
+            #self.twin_door.draw(self.screen)
             self.player.draw(self.screen)
             self.twin.draw(self.screen)
             self.rocks.draw(self.screen)
@@ -273,14 +394,14 @@ class Map:
                 elif event.button == 5:
                     self.block_select = (self.block_select - 1)%len(self.block_type)
             for event in pygame.event.get(KEYUP):
-                if event.key == K_e:
-                    if self.check_if_won():
-                        run = False
-                elif event.key == K_ESCAPE:
+                if event.key == K_ESCAPE:
                     run = False
                 elif event.key == K_SPACE:
-                    self.save_level(f'lvl_{10 + self.save_map_slot}')
+                    self.save_level(f'lvl_{self.save_map_slot}')
                     self.save_map_slot += 1
+                elif event.key == K_r:
+                    self.level = self.save_map_slot - 1
+                    self.reset()
             for event in pygame.event.get(KEYDOWN):
                 if event.key == K_d or event.key == K_RIGHT:
                     self.move_sprite(self.player.sprites()[0], dx = 1)
@@ -297,14 +418,9 @@ class Map:
 
             self.screen.fill((100,100,100))
             self.draw()
-            self.screen.blit(self.scene, (0,0))
             self.draw_square()
+            self.screen.blit(self.scene, (0,0))
 
-            #self.player_door.draw(self.screen)
-            #self.twin_door.draw(self.screen)
-            #self.player.draw(self.screen)
-            #self.twin.draw(self.screen)
-            #self.rocks.draw(self.screen)
             self.show_fps()
             pygame.display.flip()
             self.clock.tick(self.fps)
