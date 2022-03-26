@@ -25,10 +25,10 @@ class Map:
 
         self.t1 = time.time()
         self.block_select = 0
-        self.block_type = [(0,0,0), (255,0,0), (0,255,0), (0,0,255), (255,255,255), (255,0,255), (255,255,0)]
+        self.block_type = [0]*9
 
         self.level = 1
-        self.last_level = len(self.story) + 1
+        self.last_level = len(self.story)
         self.save_map_slot = self.last_level + 1
         self.reset()
 
@@ -39,6 +39,8 @@ class Map:
         for name in self.sounds:
             path = os.path.join('assets', f'{name}.wav')
             self.sounds[name] = pygame.mixer.Sound(path)
+            if name == 'rock':
+                self.sounds[name].set_volume(0.25)
 
     def load_last_level_played(self):
         path = os.path.join('levels', 'save.txt')
@@ -58,7 +60,9 @@ class Map:
                        'player'  : None,
                        'twin'  : None,
                        'player_door'  : None,
-                       'twin_door'  : None}
+                       'twin_door'  : None,
+                       'rock_door_p'  : None,
+                       'rock_door_t'  : None}
         for name in self.images:
             path = os.path.join('assets', f'{name}.png')
             img = pygame.image.load(path).convert_alpha()
@@ -90,6 +94,10 @@ class Map:
             self.twin.add(Sprite(self.nx, self.ny, x, y, 3, 0, [0,4,5], self.images['twin']))
         elif value == 6:
             self.rocks.add(Sprite(self.nx, self.ny, x, y, 6, 0, [0,4,5], self.images['rock']))
+        elif value == 7:
+            self.rocks.add(Sprite(self.nx, self.ny, x, y, 6, 4, [0,4,5], self.images['rock']))
+        elif value == 8:
+            self.rocks.add(Sprite(self.nx, self.ny, x, y, 6, 5, [0,4,5], self.images['rock']))
 
     def make_level(self):
         self.player = pygame.sprite.GroupSingle()
@@ -124,6 +132,10 @@ class Map:
             return self.images['player_door']
         elif value == 5:
             return self.images['twin_door']
+        elif value == 7:
+            return self.images['rock_door_p']
+        elif value == 8:
+            return self.images['rock_door_t']
         else:
             return self.images['rock']
 
@@ -131,7 +143,6 @@ class Map:
         self.scene.fill((35,168,28))
         for y, col in enumerate(self.lvl):
             for x, row in enumerate(col):
-                color = (0,0,0)
                 img = self.get_image(row)
                 rect = img.get_rect(topleft = (x*self.nx, y*self.ny) )
                 self.scene.blit(img, rect)
@@ -143,8 +154,14 @@ class Map:
                     img = self.images['wall']
                 elif row == 4:
                     img = self.images['player_door']
+                elif row == 7:
+                    img = self.images['player_door']
+                    self.lvl[y][x] = 6
                 elif row == 5:
                     img = self.images['twin_door']
+                elif row == 8:
+                    img = self.images['twin_door']
+                    self.lvl[y][x] = 6
                 else:
                     img = self.images['floor']
                 
@@ -264,7 +281,7 @@ class Map:
                    Button('Level Select', self.width//2, self.height*400//810, self.font_size),
                    Button('Make Level', self.width//2, self.height*550//810, self.font_size),
                    Button('Quit Game', self.width//2, self.height*700//810, self.font_size)]
-
+        self.end_level_scene()
         while run:
             if pygame.event.get(QUIT):
                 run = False
@@ -359,7 +376,7 @@ class Map:
     def game(self):
         run = True
         won = False
-        self.draw_level()
+        #self.draw_level()
         while run:
             if pygame.event.get(QUIT):
                 run = False
@@ -370,8 +387,8 @@ class Map:
                             run = False
                             won = True
                         else:
-                            self.end_level_scene()
                             self.level += 1
+                            self.end_level_scene()
                             if self.load_last_level_played() < self.level:
                                 self.save_last_level_played()
                             self.reset()
