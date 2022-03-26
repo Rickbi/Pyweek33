@@ -1,8 +1,8 @@
 from map import Map
 
 def main(resolution = (1440, 810)):
-    nx = 32
-    ny = 18
+    nx = 21
+    ny = 12
     w = resolution[0]
     h = resolution[1]
     d = min(w//nx, h//ny)

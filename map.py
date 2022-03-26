@@ -14,13 +14,14 @@ class Map:
         self.screen = pygame.display.set_mode((width, height))
         self.scene = pygame.Surface((width, height))
         self.clock = pygame.time.Clock()
-        self.fps = 60
+        self.fps = 30
         font = pygame.font.match_font('consolas')
         self.font_size = min(width*50//1440, height*50//810)
         #print(font_size)
         self.font = pygame.font.Font(font, self.font_size)
         self.load_assets()
         self.load_story()
+        self.load_sounds()
 
         self.t1 = time.time()
         self.block_select = 0
@@ -30,6 +31,14 @@ class Map:
         self.last_level = len(self.story) + 1
         self.save_map_slot = self.last_level + 1
         self.reset()
+
+    def load_sounds(self):
+        self.sounds = {'rock':None,
+                       'walk':None}
+
+        for name in self.sounds:
+            path = os.path.join('assets', f'{name}.wav')
+            self.sounds[name] = pygame.mixer.Sound(path)
 
     def load_last_level_played(self):
         path = os.path.join('levels', 'save.txt')
@@ -119,14 +128,13 @@ class Map:
             return self.images['rock']
 
     def draw(self):
-        self.scene.fill((0,0,0))
+        self.scene.fill((35,168,28))
         for y, col in enumerate(self.lvl):
             for x, row in enumerate(col):
                 color = (0,0,0)
                 img = self.get_image(row)
                 rect = img.get_rect(topleft = (x*self.nx, y*self.ny) )
                 self.scene.blit(img, rect)
-                pygame.draw.rect(self.scene, color, rect, 1)
     
     def draw_level(self):
         for y, col in enumerate(self.lvl):
@@ -181,6 +189,8 @@ class Map:
             sprite.pos_grid = (new_pos_x, new_pos_y)
             sprite.rect.x = new_x
             sprite.rect.y = new_y
+            if sprite.value == 2:
+                self.sounds['walk'].play()
             return True
         return False
 
@@ -193,7 +203,8 @@ class Map:
                 for rock in self.rocks.sprites():
                     if rock.pos_grid == (new_pos_x, new_pos_y):
                         #self.move_sprite(rock, dx, dy)
-                        self.only_move(rock, new_pos_x + dx, new_pos_y + dy)
+                        if self.only_move(rock, new_pos_x + dx, new_pos_y + dy):
+                            self.sounds['rock'].play()
                         self.only_move(sprite, new_pos_x, new_pos_y)
 
     def reset(self):
@@ -203,6 +214,7 @@ class Map:
 
     def select_menu(self):
         run = True
+        enter_b = False
         buttons = [Button('Back', self.width*200//1440, self.height*100//810, self.font_size)]
         level = self.load_last_level_played()
 
@@ -218,6 +230,7 @@ class Map:
                 if event.button == 1:
                     for button in buttons:
                         if pygame.Rect.collidepoint(button.rect, event.pos[0], event.pos[1]):
+                            self.sounds['rock'].play()
                             if button.text == 'Back':
                                 run = False
                             else:
@@ -225,11 +238,19 @@ class Map:
 
             self.screen.fill((0,0,10))
             pos_m = pygame.mouse.get_pos()
+            s = 0
             for button in buttons:
                 if pygame.Rect.collidepoint(button.rect, pos_m[0], pos_m[1]):
                     button.draw(self.screen, (255,0,0))
+                    s += 1
                 else:
                     button.draw(self.screen, (0,0,255))
+
+            if s >= 1 and not enter_b:
+                self.sounds['walk'].play()
+                enter_b = True
+            elif s == 0:
+                enter_b = False
 
             self.show_fps()
             pygame.display.flip()
@@ -237,6 +258,7 @@ class Map:
 
     def main_menu(self):
         run = True
+        enter_b = False
         buttons = [Button('Play', self.width//2, self.height*100//810, self.font_size),
                    Button('Reset Level', self.width//2, self.height*250//810, self.font_size),
                    Button('Level Select', self.width//2, self.height*400//810, self.font_size),
@@ -250,6 +272,7 @@ class Map:
                 if event.button == 1:
                     for button in buttons:
                         if pygame.Rect.collidepoint(button.rect, event.pos[0], event.pos[1]):
+                            self.sounds['rock'].play()
                             if button.text == 'Play':
                                 self.game()
                             elif button.text == 'Make Level':
@@ -272,11 +295,19 @@ class Map:
 
             self.screen.fill((0,0,10))
             pos_m = pygame.mouse.get_pos()
+            s = 0
             for button in buttons:
                 if pygame.Rect.collidepoint(button.rect, pos_m[0], pos_m[1]):
                     button.draw(self.screen, (255,0,0))
+                    s += 1
                 else:
                     button.draw(self.screen, (0,0,255))
+            
+            if s >= 1 and not enter_b:
+                self.sounds['walk'].play()
+                enter_b = True
+            elif s == 0:
+                enter_b = False
 
             self.show_fps()
 
@@ -416,7 +447,7 @@ class Map:
                     self.move_sprite(self.player.sprites()[0], dy = 1)
                     self.move_sprite(self.twin.sprites()[0], dy = -1)
 
-            self.screen.fill((100,100,100))
+            self.screen.fill((0,0,0))
             self.draw()
             self.draw_square()
             self.screen.blit(self.scene, (0,0))
@@ -427,5 +458,5 @@ class Map:
 
 
 if __name__ == '__main__':
-    map = Map(1440,810, 45, 45)
+    map = Map(1440,810, 70, 70)
     map.main_menu()
