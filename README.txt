@@ -1,11 +1,11 @@
 Description
 	Entry for the PyWeek 33 Game Jam, the theme is 'My Evil Twin'.
-	{**Pyweek link}
+	https://pyweek.org/e/RicBin33/
 	This is a puzzle game, the levels are easy (8 in total), but if you got stuck you can watch the game play video.
 	The goal is to find the 'portals' to get out of all the levels. The problem is that you need to get out together with your twin and what is worse, you twin is evil so he will move in your opposite direction. Will you be able to find the way out and escape with your evil twin?
 	
 Game Play
-{**Youtube Link}
+https://youtu.be/J8E4-qSQb9o
 
 How to run:
 	Command line to run the game: python run_game.py

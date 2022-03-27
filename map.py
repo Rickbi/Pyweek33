@@ -282,7 +282,7 @@ class Map:
             elif s == 0:
                 enter_b = False
 
-            self.show_fps()
+            #self.show_fps()
             pygame.display.flip()
             self.clock.tick(self.fps)
 
@@ -341,7 +341,7 @@ class Map:
             elif s == 0:
                 enter_b = False
 
-            self.show_fps()
+            #self.show_fps()
 
             pygame.display.flip()
             self.clock.tick(self.fps)
@@ -368,7 +368,7 @@ class Map:
             self.write('Congratulations, you finish all the levels.', (self.width*100//1440,self.height*300//810))
             self.write('Thanks for Playing', (self.width*100//1440,self.height*350//810))
             
-            self.show_fps()
+            #self.show_fps()
 
             pygame.display.flip()
             self.clock.tick(self.fps)
@@ -390,7 +390,7 @@ class Map:
             for i, line in enumerate(self.story[self.level - 1]):
                 self.write(line, (self.width*100//1440, self.height*(100 + i*50)//810 ))
             
-            self.show_fps()
+            #self.show_fps()
 
             pygame.display.flip()
             self.clock.tick(self.fps)
@@ -448,7 +448,7 @@ class Map:
             self.twin.draw(self.screen)
             self.rocks.draw(self.screen)
 
-            self.show_fps()
+            #self.show_fps()
             pygame.display.flip()
             self.clock.tick(self.fps)
         
@@ -500,7 +500,7 @@ class Map:
             self.draw_square()
             self.screen.blit(self.scene, (0,0))
 
-            self.show_fps()
+            #self.show_fps()
             pygame.display.flip()
             self.clock.tick(self.fps)
 
