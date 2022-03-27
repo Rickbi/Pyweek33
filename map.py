@@ -46,6 +46,7 @@ class Map:
         
         path = os.path.join('assets', 'music.wav')
         pygame.mixer.music.load(path)
+        pygame.mixer.music.set_volume(0.25)
 
     def load_last_level_played(self):
         path = os.path.join('levels', 'save.txt')
@@ -402,7 +403,7 @@ class Map:
             if pygame.event.get(QUIT):
                 run = False
             for event in pygame.event.get(KEYUP):
-                if event.key == K_e:
+                if event.key == K_e or event.key == K_SPACE:
                     if self.check_if_won():
                         if self.level == self.last_level:
                             run = False
