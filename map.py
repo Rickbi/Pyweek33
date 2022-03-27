@@ -16,7 +16,7 @@ class Map:
         self.clock = pygame.time.Clock()
         self.fps = 30
         font = pygame.font.match_font('consolas')
-        self.font_size = min(width*50//1440, height*50//810)
+        self.font_size = min(width*40//1440, height*50//810)
         #print(font_size)
         self.font = pygame.font.Font(font, self.font_size)
         self.load_assets()
@@ -41,6 +41,11 @@ class Map:
             self.sounds[name] = pygame.mixer.Sound(path)
             if name == 'rock':
                 self.sounds[name].set_volume(0.25)
+            elif name == 'walk':
+                self.sounds[name].set_volume(0.5)
+        
+        path = os.path.join('assets', 'music.wav')
+        pygame.mixer.music.load(path)
 
     def load_last_level_played(self):
         path = os.path.join('levels', 'save.txt')
@@ -67,6 +72,12 @@ class Map:
             path = os.path.join('assets', f'{name}.png')
             img = pygame.image.load(path).convert_alpha()
             self.images[name] = pygame.transform.scale(img, (self.nx, self.ny))
+        
+        bgs = ['bg', 'bg_end', 'bg_menu']
+        for name in bgs:
+            path = os.path.join('assets', f'{name}.png')
+            img = pygame.image.load(path).convert_alpha()
+            self.images[name] = pygame.transform.scale(img, (self.width, self.height))
 
     def load_level(self, name):
         path = os.path.join('levels', f'{name}.csv')
@@ -232,12 +243,12 @@ class Map:
     def select_menu(self):
         run = True
         enter_b = False
-        buttons = [Button('Back', self.width*200//1440, self.height*100//810, self.font_size)]
+        buttons = [Button('Back', self.width*200//1440, self.height*200//810, self.font_size)]
         level = self.load_last_level_played()
 
         for i in range(level):
             x = 200 + 250*(i//4)
-            y = 250 + 100*(i%4)
+            y = 350 + 100*(i%4)
             buttons.append(Button(f'lvl {1+i}', self.width*x//1440, self.height*y//810, self.font_size))
 
         while run:
@@ -254,6 +265,7 @@ class Map:
                                 return int(button.text.replace('lvl ', ''))
 
             self.screen.fill((0,0,10))
+            self.screen.blit(self.images['bg_menu'], (0,0))
             pos_m = pygame.mouse.get_pos()
             s = 0
             for button in buttons:
@@ -281,6 +293,7 @@ class Map:
                    Button('Level Select', self.width//2, self.height*400//810, self.font_size),
                    Button('Make Level', self.width//2, self.height*550//810, self.font_size),
                    Button('Quit Game', self.width//2, self.height*700//810, self.font_size)]
+        pygame.mixer.music.play(-1)
         self.end_level_scene()
         while run:
             if pygame.event.get(QUIT):
@@ -311,6 +324,7 @@ class Map:
                                     self.game()
 
             self.screen.fill((0,0,10))
+            self.screen.blit(self.images['bg_menu'], (0,0))
             pos_m = pygame.mouse.get_pos()
             s = 0
             for button in buttons:
@@ -338,15 +352,21 @@ class Map:
         while run:
             if pygame.event.get(QUIT):
                 run = False
-            for event in pygame.event.get(KEYUP):
+            for event in pygame.event.get(KEYDOWN):
                 run = False
             for event in pygame.event.get(MOUSEBUTTONUP):
                 if event.button == 1 or event.button == 3:
                     run = False
 
             self.screen.fill((0,0,50))
-            self.write('Congratulations, you finish all the levels.', (100,100))
-            self.write('Thanks for Playing', (100,300))
+            self.screen.blit(self.images['bg_end'], (0,0))
+            
+            self.write('That does not matter now.', (self.width*100//1440,self.height*100//810))
+            self.write('For me, he will always be my brother.', (self.width*100//1440,self.height*150//810))
+
+            self.write('Congratulations, you finish all the levels.', (self.width*100//1440,self.height*300//810))
+            self.write('Thanks for Playing', (self.width*100//1440,self.height*350//810))
+            
             self.show_fps()
 
             pygame.display.flip()
@@ -357,16 +377,17 @@ class Map:
         while run:
             if pygame.event.get(QUIT):
                 run = False
-            for event in pygame.event.get(KEYUP):
+            for event in pygame.event.get(KEYDOWN):
                 run = False
             for event in pygame.event.get(MOUSEBUTTONUP):
                 if event.button == 1 or event.button == 3:
                     run = False
 
             self.screen.fill((0,0,50))
+            self.screen.blit(self.images['bg'], (0,0))
 
             for i, line in enumerate(self.story[self.level - 1]):
-                self.write(line, (self.width*100//1440, self.height*(100 + i*200)//810 ))
+                self.write(line, (self.width*100//1440, self.height*(100 + i*50)//810 ))
             
             self.show_fps()
 
@@ -408,11 +429,20 @@ class Map:
                     self.move_sprite(self.player.sprites()[0], dy = 1)
                     self.move_sprite(self.twin.sprites()[0], dy = -1)
 
+            # if self.check_if_won():
+            #     if self.level == self.last_level:
+            #         run = False
+            #         won = True
+            #     else:
+            #         self.level += 1
+            #         self.end_level_scene()
+            #     if self.load_last_level_played() < self.level:
+            #         self.save_last_level_played()
+            #     self.reset()
+
             self.screen.fill((100,100,100))
             self.screen.blit(self.scene, (0,0))
             
-            #self.player_door.draw(self.screen)
-            #self.twin_door.draw(self.screen)
             self.player.draw(self.screen)
             self.twin.draw(self.screen)
             self.rocks.draw(self.screen)
