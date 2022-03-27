@@ -9,6 +9,7 @@ class Map:
         self.height = height
         self.nx = nx
         self.ny = ny
+        self.mute = False
 
         pygame.init()
         self.screen = pygame.display.set_mode((width, height))
@@ -21,7 +22,12 @@ class Map:
         self.font = pygame.font.Font(font, self.font_size)
         self.load_assets()
         self.load_story()
-        self.load_sounds()
+        try:
+            self.load_sounds()
+        except Exception as err:
+            print('Error loading the sound')
+            print(f'Error Name: {err}')
+            self.mute = True
 
         self.t1 = time.time()
         self.block_select = 0
@@ -37,16 +43,24 @@ class Map:
                        'walk':None}
 
         for name in self.sounds:
-            path = os.path.join('assets', f'{name}.wav')
+            path = os.path.join('assets','sounds', f'{name}.wav')
             self.sounds[name] = pygame.mixer.Sound(path)
             if name == 'rock':
                 self.sounds[name].set_volume(0.25)
             elif name == 'walk':
                 self.sounds[name].set_volume(0.5)
         
-        path = os.path.join('assets', 'music.wav')
+        path = os.path.join('assets','sounds', 'music.wav')
         pygame.mixer.music.load(path)
         pygame.mixer.music.set_volume(0.25)
+
+    def make_sound(self, sound):
+        if not self.mute:
+            self.sounds[sound].play()
+    
+    def play_music(self):
+        if not self.mute:
+            pygame.mixer.music.play(-1)
 
     def load_last_level_played(self):
         path = os.path.join('levels', 'save.txt')
@@ -207,9 +221,8 @@ class Map:
 
     def only_move(self, sprite, new_pos_x, new_pos_y):
         cond_1 = 0 <= new_pos_x < len(self.lvl[0]) and 0 <= new_pos_y < len(self.lvl)
-        cond_2 = self.lvl[new_pos_y][new_pos_x] in sprite.movable
         
-        if cond_1 and cond_2:
+        if cond_1 and self.lvl[new_pos_y][new_pos_x] in sprite.movable:
             self.lvl[sprite.pos_grid[1]][sprite.pos_grid[0]] = sprite.value_on
             sprite.value_on = self.lvl[new_pos_y][new_pos_x]
             self.lvl[new_pos_y][new_pos_x] = sprite.value
@@ -219,21 +232,22 @@ class Map:
             sprite.rect.x = new_x
             sprite.rect.y = new_y
             if sprite.value == 2:
-                self.sounds['walk'].play()
+                self.make_sound('walk')
             return True
         return False
 
     def move_sprite(self, sprite, dx = 0, dy = 0):
         new_pos_x = sprite.pos_grid[0] + dx
         new_pos_y = sprite.pos_grid[1] + dy
+        cond_1 = 0 <= new_pos_x < len(self.lvl[0]) and 0 <= new_pos_y < len(self.lvl)
 
-        if not self.only_move(sprite, new_pos_x, new_pos_y):            
+        if not self.only_move(sprite, new_pos_x, new_pos_y) and cond_1:
             if self.lvl[new_pos_y][new_pos_x] == 6:
                 for rock in self.rocks.sprites():
                     if rock.pos_grid == (new_pos_x, new_pos_y):
                         #self.move_sprite(rock, dx, dy)
                         if self.only_move(rock, new_pos_x + dx, new_pos_y + dy):
-                            self.sounds['rock'].play()
+                            self.make_sound('rock')
                         self.only_move(sprite, new_pos_x, new_pos_y)
 
     def reset(self):
@@ -259,7 +273,7 @@ class Map:
                 if event.button == 1:
                     for button in buttons:
                         if pygame.Rect.collidepoint(button.rect, event.pos[0], event.pos[1]):
-                            self.sounds['rock'].play()
+                            self.make_sound('rock')
                             if button.text == 'Back':
                                 run = False
                             else:
@@ -277,7 +291,7 @@ class Map:
                     button.draw(self.screen, (0,0,255))
 
             if s >= 1 and not enter_b:
-                self.sounds['walk'].play()
+                self.make_sound('walk')
                 enter_b = True
             elif s == 0:
                 enter_b = False
@@ -294,7 +308,7 @@ class Map:
                    Button('Level Select', self.width//2, self.height*400//810, self.font_size),
                    Button('Make Level', self.width//2, self.height*550//810, self.font_size),
                    Button('Quit Game', self.width//2, self.height*700//810, self.font_size)]
-        pygame.mixer.music.play(-1)
+        self.play_music()
         self.end_level_scene()
         while run:
             if pygame.event.get(QUIT):
@@ -303,7 +317,7 @@ class Map:
                 if event.button == 1:
                     for button in buttons:
                         if pygame.Rect.collidepoint(button.rect, event.pos[0], event.pos[1]):
-                            self.sounds['rock'].play()
+                            self.make_sound('rock')
                             if button.text == 'Play':
                                 self.game()
                             elif button.text == 'Make Level':
@@ -336,7 +350,7 @@ class Map:
                     button.draw(self.screen, (0,0,255))
             
             if s >= 1 and not enter_b:
-                self.sounds['walk'].play()
+                self.make_sound('walk')
                 enter_b = True
             elif s == 0:
                 enter_b = False
@@ -482,18 +496,20 @@ class Map:
                     self.level = self.save_map_slot - 1
                     self.reset()
             for event in pygame.event.get(KEYDOWN):
+                lar_p = len(self.player.sprites())
+                lar_t = len(self.twin.sprites())
                 if event.key == K_d or event.key == K_RIGHT:
-                    self.move_sprite(self.player.sprites()[0], dx = 1)
-                    self.move_sprite(self.twin.sprites()[0], dx = -1)
+                    if lar_p > 0: self.move_sprite(self.player.sprites()[0], dx = 1)
+                    if lar_t > 0: self.move_sprite(self.twin.sprites()[0], dx = -1)
                 elif event.key == K_a or event.key == K_LEFT:
-                    self.move_sprite(self.player.sprites()[0], dx = -1)
-                    self.move_sprite(self.twin.sprites()[0], dx = 1)
+                    if lar_p > 0: self.move_sprite(self.player.sprites()[0], dx = -1)
+                    if lar_t > 0: self.move_sprite(self.twin.sprites()[0], dx = 1)
                 elif event.key == K_w or event.key == K_UP:
-                    self.move_sprite(self.player.sprites()[0], dy = -1)
-                    self.move_sprite(self.twin.sprites()[0], dy = 1)
+                    if lar_p > 0: self.move_sprite(self.player.sprites()[0], dy = -1)
+                    if lar_t > 0: self.move_sprite(self.twin.sprites()[0], dy = 1)
                 elif event.key == K_s or event.key == K_DOWN:
-                    self.move_sprite(self.player.sprites()[0], dy = 1)
-                    self.move_sprite(self.twin.sprites()[0], dy = -1)
+                    if lar_p > 0: self.move_sprite(self.player.sprites()[0], dy = 1)
+                    if lar_t > 0: self.move_sprite(self.twin.sprites()[0], dy = -1)
 
             self.screen.fill((0,0,0))
             self.draw()

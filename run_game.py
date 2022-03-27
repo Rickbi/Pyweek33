@@ -11,6 +11,6 @@ def main(resolution):
 
 if __name__ == '__main__':
     #resolution = (1280, 720)
-    #resolution = (800, 450)
-    resolution = (1920, 1080)
+    resolution = (800, 450)
+    #resolution = (1920, 1080)
     main( resolution )
