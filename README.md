@@ -5,7 +5,7 @@
 	The goal is to find the 'portals' to get out of all the levels. The problem is that you need to get out together with your twin and what is worse, you twin is evil so he will move in your opposite direction. Will you be able to find the way out and escape with your evil twin?
 	
 # Game Play
-{**Youtube Link}
+https://youtu.be/J8E4-qSQb9o
 
 # How to run:
 	Command line to run the game: python run_game.py
